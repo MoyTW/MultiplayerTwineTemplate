@@ -1,0 +1,111 @@
+:: StoryTitle
+Multiplayer Hello, World!
+
+
+:: StoryData
+{
+	"ifid": "D7EEB4F6-CCC2-43E3-AD93-B5855945E8EC"
+}
+
+
+:: Start
+<<nobr>>
+  /* Websocket tracking */
+  <<set $shouldBeConnected to false>>
+  <<set $websocketProcessedUpToMs to 0>>
+  <<set $clientId to setup.Websocket.getClientId()>>
+<</nobr>>\
+<h1 class="game-title">Mutiplayer Hello, World!</h1>\
+<h2 class="passage-h2">Main Menu</h2>\
+<<button [[Host a game|HostGame]]>>
+  <<set $sessionId to setup.Websocket.uuidv4()>>
+  <<set $hostClientId to setup.Websocket.getClientId()>>
+  <<connect $sessionId>>
+<</button>>
+<<button [[Join a game|JoinGame]]>><</button>>
+<<button [[Credits|MainMenu_Credits]]>><</button>>
+<<button [[About|MainMenu_About]]>><</button>>
+
+
+:: HostGame
+<h1>Hosting a new game...</h1>\
+Your session ID is:
+<strong>$sessionId</strong>
+Send this ID to your partner.
+
+The game will automatically start once your partner has joined.
+<<nobr>>
+  <<receive 'JOIN_GAME_CLIENT_CONNECTED' 'Host'>>
+    <<if $clientId === $hostClientId>>
+      <<send 'HOST_GAME_GAME_STARTED' { hostClientId: $hostClientId }>><</send>>
+    <</if>>
+  <</receive>>
+  <<receive 'HOST_GAME_GAME_STARTED' 'Host'>>
+      <<run Engine.play('HelloWorld');>>
+  <</receive>>
+<</nobr>>
+
+
+:: JoinGame
+<<set _input>>\
+Please enter the session identifier you'd like to join.
+@@#jg-session-input;<<textbox '_input' '' autofocus>>@@
+@@#jg-join-button;<<disable>><<button 'Session identifier is invalid.'>>
+  <<run $('#jg-join-button').text('Joining game...')>>
+  <<run $('#jg-join-button').prop('disabled', true)>>
+  <<set $sessionId to $('#jg-session-input input')[0].value>>
+  <<connect $sessionId>>
+  <<send 'JOIN_GAME_CLIENT_CONNECTED' {}>><</send>>
+<</button>><</disable>>@@\
+<<button [[Main Menu|Start]]>><</button>>
+<<done>><<script>>
+  const button = $('#jg-join-button button')
+  $('#jg-session-input input').on('input', function(ev) {
+    if (setup.Websocket.isUuid(ev.target.value)) {
+      button.html('Join game.')
+      button.prop('disabled', false)
+    } else {
+      button.html('Session identifier is invalid.')
+      button.prop('disabled', true)
+    }
+  })
+<</script>><</done>>\
+<<receive 'HOST_GAME_GAME_STARTED' 'Client'>>
+  <<if $clientId !== $hostClientId>>
+    <<set $hostClientId to _receiveData.hostClientId>>
+    <<run Engine.play('HelloWorld');>>
+  <</if>>
+<</receive>>\
+
+
+:: MainMenu_Credits
+TODO: Credits!
+
+<<button [[Main Menu|Start]]>><</button>>
+
+
+:: MainMenu_About
+TODO: About!
+
+<<button [[Main Menu|Start]]>><</button>>
+
+
+:: HelloWorld
+@@#hw-chatbox;<<if _chat is undefined>><</if>>@@
+<<button "Say hello!">>
+  <<send 'SAY_HELLO' { senderId: State.variables.clientId } >><</send>>
+<</button>>
+<<button "Restart">>
+  <<run Engine.restart()>>
+<</button>>
+<<nobr>><<receive 'SAY_HELLO' 'ALL'>><<script>>
+  if (State.temporary.chat === undefined) { State.temporary.chat = ""}
+  
+  const data = State.temporary.receiveData
+  if (data.senderId === State.variables.clientId) {
+    State.temporary.chat = State.temporary.chat + "You say hello!\n"
+  } else {
+    State.temporary.chat = State.temporary.chat + "Your partner says hello!\n"
+  }
+  $("#hw-chatbox").text(State.temporary.chat)
+<</script>><</receive>><</nobr>>\
