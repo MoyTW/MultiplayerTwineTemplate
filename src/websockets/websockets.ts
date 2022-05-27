@@ -16,7 +16,8 @@
   // Deliberately not tying it into Sugarcube's debug because turning that on makes everything hideous
   const DEBUG: boolean = true;
   const DEV_SERVER_URL: string = 'ws://localhost:8000/ws/';
-  const PROD_SERVER_URL: string = 'wss://multiplayer-twine-server.herokuapp.com/ws/';
+  // Ideally, this would be read via the sugarcube configs, but I think I'd have to hack sugarcube (more) to do that.
+  const PROD_SERVER_URL: string = '';
 
   const _registerHandler = function(messageType: string, handlerKey: string, handler: (data: object) => void) {
     if (_handlers[messageType] == undefined) {
